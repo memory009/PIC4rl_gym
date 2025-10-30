@@ -3,11 +3,8 @@ from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument, OpaqueFunction, SetLaunchConfiguration
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
-from launch_ros.descriptions import ParameterFile, Parameter, ParameterValue
 from pic4rl.utils.launch_utils import camel_to_snake
 import yaml
-
-from nav2_common.launch import ReplaceString, RewrittenYaml
 
 
 def print_params(context, *args, **kwargs):
@@ -18,49 +15,49 @@ def print_params(context, *args, **kwargs):
     training_params = LaunchConfiguration("training_params")
     mode = LaunchConfiguration("mode")
     
-    if not (
-        sensor.perform(context=context) == "" and task.perform(context=context) == "" and mode.perform(context=context) == ""
-    ):
-        configured_params = ParameterFile(
-            RewrittenYaml(
-                source_file=main_params,
-                param_rewrites={
-                    "sensor": sensor,
-                    "task": task,
-                    "mode": mode,
-                },
-                convert_types=True,
-            ),
-            allow_substs=True,
-        )
-        print("parameters substituted")
-    else:
-        configured_params = ParameterFile(
-            main_params,
-            allow_substs=True,
-        )
-    # open file of Parameters
-    with open(configured_params.param_file[0].perform(context=context), "r") as file:
-        # main_params = yaml.safe_load(file)["main_node"]["ros__parameters"]
+    # Get the path to the parameter file
+    params_file_path = main_params.perform(context)
+    
+    # Load the YAML file
+    with open(params_file_path, "r") as file:
         main_params_dict = yaml.safe_load(file)["main_node"]['ros__parameters']
-        print(main_params_dict)
+    
+    # Override parameters if provided via command line
+    sensor_value = sensor.perform(context=context)
+    task_value = task.perform(context=context)
+    mode_value = mode.perform(context=context)
+    
+    if sensor_value != "":
+        main_params_dict["sensor"] = sensor_value
+        print(f"Overriding sensor parameter: {sensor_value}")
+    
+    if task_value != "":
+        main_params_dict["task"] = task_value
+        print(f"Overriding task parameter: {task_value}")
+    
+    if mode_value != "":
+        main_params_dict["mode"] = mode_value
+        print(f"Overriding mode parameter: {mode_value}")
+    
+    print("Final parameters:")
+    print(main_params_dict)
 
-        sensor_name = main_params_dict["sensor"]
-        task_name = main_params_dict["task"]
-        print(camel_to_snake(task_name) + "_" + camel_to_snake(sensor_name))
-        executable_name = camel_to_snake(task_name) + "_" + camel_to_snake(sensor_name)
+    sensor_name = main_params_dict["sensor"]
+    task_name = main_params_dict["task"]
+    print(camel_to_snake(task_name) + "_" + camel_to_snake(sensor_name))
+    executable_name = camel_to_snake(task_name) + "_" + camel_to_snake(sensor_name)
 
     task_node = Node(
-        package=pkg_name,
+        package=pkg_name.perform(context),
         executable=executable_name,
         name="pic4rl_starter",
         output="screen",
         emulate_tty=True,
         parameters=[
             main_params_dict,
-            {"package_name": pkg_name},
-            {"main_params_path": main_params},
-            {"training_params_path": training_params},
+            {"package_name": pkg_name.perform(context)},
+            {"main_params_path": params_file_path},
+            {"training_params_path": training_params.perform(context)},
         ],
     )
     return [task_node]

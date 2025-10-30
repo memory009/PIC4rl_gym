@@ -6,12 +6,26 @@ Home-page: https://github.com/keiohta/tf2rl
 Author: Kei Ohta
 Author-email: dev.ohtakei@gmail.com
 License: MIT
-Platform: UNKNOWN
-Provides-Extra: examples
-Provides-Extra: test
-Provides-Extra: tf
-Provides-Extra: tf_gpu
 License-File: LICENSE
-
-UNKNOWN
-
+Requires-Dist: cpprb>=8.1.1
+Requires-Dist: setuptools>=41.0.0
+Requires-Dist: numpy>=1.16.0
+Requires-Dist: joblib
+Requires-Dist: future
+Requires-Dist: scipy
+Requires-Dist: scikit-image
+Requires-Dist: tensorflow-probability~=0.18
+Requires-Dist: tensorflow-addons~=0.18
+Provides-Extra: tf
+Requires-Dist: tensorflow>=2.0.0; extra == "tf"
+Provides-Extra: tf-gpu
+Requires-Dist: tensorflow-gpu>=2.0.0; extra == "tf-gpu"
+Provides-Extra: examples
+Requires-Dist: gym[atari]>=0.21.0; extra == "examples"
+Requires-Dist: opencv-python; extra == "examples"
+Provides-Extra: test
+Requires-Dist: coveralls; extra == "test"
+Requires-Dist: gym[atari]>=0.21.0; extra == "test"
+Requires-Dist: matplotlib; extra == "test"
+Requires-Dist: opencv-python; extra == "test"
+Requires-Dist: future; extra == "test"
