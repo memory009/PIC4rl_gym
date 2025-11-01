@@ -89,6 +89,9 @@ class Pic4rlLidar(Pic4rlEnvironmentLidar):
             [-math.pi, math.pi],  # goal angle or yaw
         ]
 
+        # Add lidar measurements to observation space
+        for i in range(self.lidar_points):
+            state.append([0.0, self.lidar_distance])  # each lidar point
 
         if len(state) > 0:
             low_state = []

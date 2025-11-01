@@ -269,24 +269,63 @@ class Pic4rlEnvironmentLidar(Node):
         return False, "None"
 
     def get_reward(self, twist, lidar_measurements, goal_info, robot_pose, done, event):
-        """ """
-        reward = (self.previous_goal_info[0] - goal_info[0]) * 30
-        yaw_reward = (1 - 2 * math.sqrt(math.fabs(goal_info[1] / math.pi))) * 0.6
-
-        reward += yaw_reward
-
+        """ 
+        设计原则：
+        1. 避免reward符号陷阱（远离目标不应被过度惩罚）
+        2. 所有项都应该连续可微
+        3. 终止状态奖励与步奖励在同一量级
+        """
+        
+        # 1. 距离奖励（只奖励接近）
+        distance_change = self.previous_goal_info[0] - goal_info[0]
+        distance_reward = max(0, distance_change * 5.0)
+        
+        # 2. 距离惩罚（距离越远越焦虑）
+        distance_penalty = -0.02 * goal_info[0]  # 每米-0.02
+        
+        # 3. 朝向奖励（归一化到[0,1]）
+        heading_reward = (1 - abs(goal_info[1]) / math.pi) * 2.0
+        
+        # 4. 障碍物惩罚（连续指数增长）
+        min_obstacle_dist = min(lidar_measurements)
+        safe_distance = 0.6
+        
+        if min_obstacle_dist < safe_distance:
+            ratio = (safe_distance - min_obstacle_dist) / safe_distance
+            obstacle_penalty = -10.0 * (ratio ** 2)
+        else:
+            obstacle_penalty = 0.0
+        
+        # 5. 速度奖励（鼓励前进）
+        speed_reward = twist.linear.x * 0.3
+        
+        # 6. 平滑惩罚（已经对准时才惩罚过度转向）
+        if abs(goal_info[1]) < 0.2:
+            angular_penalty = -0.3 * abs(twist.angular.z)
+        else:
+            angular_penalty = 0.0
+        
+        # 7. 组合reward
+        reward = (distance_reward + distance_penalty + heading_reward + 
+                obstacle_penalty + speed_reward + angular_penalty)
+        
+        # 8. 终止状态（与步奖励在同一量级）
         if event == "goal":
-            reward += 1000
+            reward += 100  # 相当于前进20米
         elif event == "collision":
-            reward += -200
-        self.get_logger().debug(str(reward))
-
+            reward += -50  # 相当于10次危险接近
+        elif event == "timeout":
+            reward += -10  # 轻微惩罚
+            
         return reward
 
     def get_observation(self, twist, lidar_measurements, goal_info, robot_pose):
         """ """
         state_list = goal_info
-
+        
+        # Add lidar measurements to the observation
+        lidar_array = np.array(lidar_measurements, dtype=np.float32)
+        state_list = np.concatenate((state_list, lidar_array))
 
         state = np.array(state_list, dtype=np.float32)
 
