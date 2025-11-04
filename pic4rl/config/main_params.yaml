@@ -17,7 +17,7 @@ main_node:
 
     # World parameters
     world_name: "new_indoor.world" # Leave empty to obtain no world
-    data_path: "new_indoor.json" # Indicate a goals and poses json file from goals_and_poses folder
+    data_path: "training/new_indoor.json" # Indicate a goals and poses json file from goals_and_poses folder
 
     # Task parameters
     task: 'goToPose' # goToPose, Following, Vineyards
