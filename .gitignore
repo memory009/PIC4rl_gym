@@ -5,3 +5,9 @@
 /pic4rl/config/main_params.yaml
 /pic4rl/config/training_params.yaml
 *.pyc
+
+# 验证结果文件
+polar_mock_results/*.json
+polar_mock_results/*.png
+polar_test_results/*.json
+polar_test_results/*.png
