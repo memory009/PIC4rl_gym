@@ -87,13 +87,15 @@ def test_with_trained_model(model_dir, n_tests=50, gpu_mode='auto'):
                 print(f"  ℹ️  系统未检测到GPU设备，使用CPU")
         else:
             raise ValueError(f"不支持的GPU模式: {gpu_mode}")
-            
-    except Exception as e:
-        print(f"  ⚠️  TensorFlow配置警告: {e}")
         
+        # 加载tf2rl模型
         # 这里需要根据你的实际pic4rl代码调整
-        # 假设你有一个函数可以加载policy
         from tf2rl.algos.td3 import TD3
+        
+        # 根据gpu_mode决定TD3是否使用GPU
+        # 注意：在auto/cpu模式下，TF已经被设置为不可见GPU，所以gpu参数无关紧要
+        # 在all-gpu模式下，TD3可以使用GPU
+        td3_gpu = -1 if gpu_mode == 'cpu' else 0  # -1表示CPU，0表示GPU:0
         
         # 加载checkpoint
         # 注意：这里的路径需要根据你的实际模型结构调整
@@ -101,7 +103,7 @@ def test_with_trained_model(model_dir, n_tests=50, gpu_mode='auto'):
             state_shape=(38,),
             action_dim=2,
             max_action=0.5,
-            gpu=0
+            gpu=td3_gpu
         )
         
         # 加载权重
@@ -372,15 +374,35 @@ def test_with_mock_model(n_tests=20):
 if __name__ == "__main__":
     import argparse
     
-    parser = argparse.ArgumentParser(description='测试POLAR验证')
+    parser = argparse.ArgumentParser(
+        description='测试POLAR验证',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+GPU模式说明:
+  auto     - 自动模式（默认）：TF使用CPU，PyTorch智能选择（适合本地开发）
+  all-gpu  - 全GPU模式：TF和PyTorch都使用GPU（适合服务器，显存充足）
+  cpu      - 全CPU模式：强制所有组件使用CPU
+
+使用示例:
+  # 本地开发（默认）
+  python tests/test_trained_model.py --model-dir path/to/model --n-tests 100
+  
+  # 服务器（显存充足）
+  python tests/test_trained_model.py --model-dir path/to/model --n-tests 100 --gpu-mode all-gpu
+  
+  # 强制CPU模式
+  python tests/test_trained_model.py --model-dir path/to/model --n-tests 100 --gpu-mode cpu
+        """
+    )
     parser.add_argument('--model-dir', type=str, default=None,
                        help='已训练模型的路径')
     parser.add_argument('--n-tests', type=int, default=50,
-                       help='测试次数')
+                       help='测试次数（默认50）')
     parser.add_argument('--mock', action='store_true',
-                       help='使用模拟模型测试')
-    parser.add_argument('--cpu', action='store_true',
-                       help='强制使用CPU进行验证（当GPU显存不足时使用）')
+                       help='使用模拟模型测试（无需真实模型）')
+    parser.add_argument('--gpu-mode', type=str, default='auto',
+                       choices=['auto', 'all-gpu', 'cpu'],
+                       help='GPU使用模式（默认: auto）')
     
     args = parser.parse_args()
     
@@ -389,6 +411,10 @@ if __name__ == "__main__":
         success = test_with_mock_model(n_tests=args.n_tests)
     else:
         print(f"使用真实模型进行测试: {args.model_dir}\n")
-        success = test_with_trained_model(args.model_dir, n_tests=args.n_tests, force_cpu=args.cpu)
+        success = test_with_trained_model(
+            args.model_dir, 
+            n_tests=args.n_tests, 
+            gpu_mode=args.gpu_mode
+        )
     
     sys.exit(0 if success else 1)
