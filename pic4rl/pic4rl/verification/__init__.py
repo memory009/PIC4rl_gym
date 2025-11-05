@@ -11,10 +11,17 @@ from .taylor_model import (
     apply_activation
 )
 
+from .tf_adapter import (
+    TD3WeightExtractor,
+    verify_weight_extraction
+)
+
 __all__ = [
     'TaylorModel',
     'TaylorArithmetic', 
     'BernsteinPolynomial',
     'compute_tm_bounds',
-    'apply_activation'
+    'apply_activation',
+    'TD3WeightExtractor',
+    'verify_weight_extraction'
 ]
