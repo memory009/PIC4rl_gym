@@ -16,6 +16,11 @@ from .tf_adapter import (
     verify_weight_extraction
 )
 
+from .reachability import (
+    POLARReachability,
+    analyze_safety
+)
+
 __all__ = [
     'TaylorModel',
     'TaylorArithmetic', 
@@ -23,5 +28,7 @@ __all__ = [
     'compute_tm_bounds',
     'apply_activation',
     'TD3WeightExtractor',
-    'verify_weight_extraction'
+    'verify_weight_extraction',
+    'POLARReachability',
+    'analyze_safety'
 ]
