@@ -16,11 +16,14 @@ with open(configFilepath, 'r') as file:
     configParams = yaml.safe_load(file)['main_node']['ros__parameters']
 
 # Fetching Goals and Poses
-goals_path = os.path.join(
+# 根据mode(training/testing)构建正确的路径
+mode = configParams.get('mode', 'training')  # 默认为training
+goals_base_path = os.path.join(
     get_package_share_directory("pic4rl"), 
-    'goals_and_poses', 
-    configParams['data_path']
-    )
+    'goals_and_poses',
+    mode  # 添加mode子目录(training或testing)
+)
+goals_path = os.path.join(goals_base_path, configParams['data_path'])
 goal_and_poses = json.load(open(goals_path,'r'))
 robot_pose, goal_pose = goal_and_poses["initial_pose"], goal_and_poses["goals"][0]
 
