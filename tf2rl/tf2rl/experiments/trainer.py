@@ -261,7 +261,8 @@ class Trainer:
             self.logger.info("Testing Episode {}".format(i+1))
             episode_return = 0.
             frames = []
-            obs = self._test_env.reset(n_episode, total_steps, evaluate=True)
+            # 修复: 使用 n_episode + i 确保每个episode有唯一的编号
+            obs = self._test_env.reset(n_episode + i, total_steps, evaluate=True)
             avg_test_steps += 1
             fps = 0.
             episode_start_time = time.perf_counter()
@@ -294,6 +295,16 @@ class Trainer:
                 frames_to_gif(frames, prefix, self._output_dir)
             avg_test_return += episode_return
             avg_fps += fps
+        
+        # 保存最后一个episode的指标数据
+        if hasattr(self._test_env, 'mode') and self._test_env.mode == "testing":
+            last_episode_num = n_episode + self._test_episodes - 1
+            self._test_env.nav_metrics.calc_metrics(last_episode_num, 
+                                                     self._test_env.initial_pose, 
+                                                     self._test_env.goal_pose)
+            self._test_env.nav_metrics.log_metrics_results(last_episode_num)
+            self._test_env.nav_metrics.save_metrics_results(last_episode_num)
+        
         if self._show_test_images:
             images = tf.cast(
                 tf.expand_dims(np.array(obs).transpose(2, 0, 1), axis=3),

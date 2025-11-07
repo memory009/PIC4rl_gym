@@ -223,6 +223,9 @@ class Navigation_Metrics(Node):
             self.robot_poses(episode)
         if self.params["robot_velocities"]:
             self.robot_velocities(episode)
+        # === 新增：保存雷达数据 ===
+        self.save_lidar_data(episode)
+        # === 新增结束 ===
         if self.params["path_distance"]:
             self.path_distance()
         if self.params["distance_path_ratio"]:
@@ -292,6 +295,78 @@ class Navigation_Metrics(Node):
         #         self.velocities
         #         )
         #     )
+    def save_lidar_data(self, episode=1):
+        """
+        保存雷达数据用于可达性分析
+        
+        保存格式：
+        - lidar_data_ep{N}.npy: NumPy二进制格式（快速加载）
+        - lidar_data_ep{N}.txt: 文本格式（人类可读）
+        - lidar_critical_ep{N}.npy: 关键时刻的雷达数据
+        """
+        if not self.lidar_measurements:
+            self.get_logger().warn(f"Episode {episode}: No lidar data to save")
+            return
+        
+        lidar_array = np.array(self.lidar_measurements)  # shape: (steps, num_lidar_points)
+        
+        # 保存完整轨迹的LiDAR数据
+        npy_path = str(self.save_path) + f"/lidar_data_ep{episode}.npy"
+        txt_path = str(self.save_path) + f"/lidar_data_ep{episode}.txt"
+        np.save(npy_path, lidar_array)
+        np.savetxt(txt_path, lidar_array)
+        
+        # 提取并保存关键时刻（可选但推荐）
+        critical_moments = self._extract_critical_lidar_moments(lidar_array)
+        if len(critical_moments) > 0:
+            critical_npy_path = str(self.save_path) + f"/lidar_critical_ep{episode}.npy"
+            np.save(critical_npy_path, critical_moments)
+        
+        self.get_logger().info(
+            f"Saved lidar data for episode {episode}: "
+            f"{lidar_array.shape[0]} steps, "
+            f"{critical_moments.shape[0]} critical moments"
+        )
+
+    def _extract_critical_lidar_moments(self, lidar_array):
+        """
+        提取关键时刻的LiDAR数据
+        
+        关键时刻定义：
+        1. 最危险时刻（最小距离 < 1.0m）
+        2. 每隔50步采样一次（轨迹分布）
+        
+        Returns:
+            critical_data: shape (N, num_points+1)
+            最后一列是该时刻的最小障碍物距离
+        """
+        critical_indices = []
+        
+        # 1. 找到所有危险时刻（任意雷达点 < 1.0m）
+        min_distances = np.min(lidar_array, axis=1)
+        dangerous_indices = np.where(min_distances < 1.0)[0]
+        critical_indices.extend(dangerous_indices.tolist())
+        
+        # 2. 均匀采样轨迹（每50步或总步数的10%，取较小者）
+        sample_interval = min(50, max(1, len(lidar_array) // 10))
+        sampled_indices = list(range(0, len(lidar_array), sample_interval))
+        critical_indices.extend(sampled_indices)
+        
+        # 3. 去重并排序
+        critical_indices = sorted(set(critical_indices))
+        
+        if not critical_indices:
+            return np.array([])
+        
+        # 4. 提取数据并添加最小距离作为额外信息
+        critical_data = []
+        for idx in critical_indices:
+            lidar_step = lidar_array[idx]
+            min_dist = np.min(lidar_step)
+            # 拼接：[lidar_points..., min_distance, step_index]
+            critical_data.append(np.append(lidar_step, [min_dist, idx]))
+        
+        return np.array(critical_data)
 
     def path_distance(self, event="Goal"):
         """ """

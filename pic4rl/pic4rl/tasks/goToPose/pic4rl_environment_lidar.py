@@ -342,10 +342,12 @@ class Pic4rlEnvironmentLidar(Node):
 
     def reset(self, n_episode, tot_steps, evaluate=False):
         """ """
-        if self.mode == "testing":
-            self.nav_metrics.calc_metrics(n_episode, self.initial_pose, self.goal_pose)
-            self.nav_metrics.log_metrics_results(n_episode)
-            self.nav_metrics.save_metrics_results(n_episode)
+        # 在testing模式下,只在非第一个episode时保存上一个episode的指标
+        # 注意: 这里保存的是上一个episode的数据,因为reset在新episode开始时被调用
+        if self.mode == "testing" and n_episode > 0:
+            self.nav_metrics.calc_metrics(n_episode - 1, self.initial_pose, self.goal_pose)
+            self.nav_metrics.log_metrics_results(n_episode - 1)
+            self.nav_metrics.save_metrics_results(n_episode - 1)
 
         self.episode = n_episode
         self.evaluate = evaluate
