@@ -364,6 +364,14 @@ class Pic4rlEnvironmentLidar(Node):
         _, _, _ = self._step(reset_step=True)
         observation, _, _ = self._step()
 
+        # Debug: 打印observation以诊断问题
+        if self.mode == "testing" or self.evaluate:
+            self.get_logger().info(
+                f"Initial obs - distance: {observation[0]:.3f}m, "
+                f"angle: {observation[1]:.3f}rad ({math.degrees(observation[1]):.1f}°), "
+                f"lidar_min: {min(observation[2:]):.3f}m"
+            )
+
         return observation
 
     def new_episode(self):
