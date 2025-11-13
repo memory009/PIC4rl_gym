@@ -374,8 +374,12 @@ class Pic4rlEnvironmentCamera(Node):
             self.get_logger().warn("service not available, waiting again...")
         self.reset_world_client.call_async(req)
 
-        if self.episode % self.change_episode == 0.0 or self.evaluate:
-            self.index = int(np.random.uniform() * len(self.poses)) - 1
+        if self.evaluate:
+            # evaluate模式：顺序遍历所有配对，确保每个都被测试到
+            self.index = self.episode % len(self.poses)
+        elif self.episode % self.change_episode == 0.0:
+            # 训练模式：随机选择配对
+            self.index = np.random.randint(0, len(self.poses))
 
         self.get_logger().debug("Respawing robot ...")
         self.respawn_robot(self.index)
