@@ -391,7 +391,10 @@ class Pic4rlEnvironmentCamera(Node):
 
     def respawn_goal(self, index):
         """ """
-        if self.episode <= self.starting_episodes:
+        # 测试模式或evaluate模式应该总是使用配对的goal
+        if self.evaluate or self.mode == "testing":
+            self.get_goal(index)
+        elif self.episode <= self.starting_episodes:
             self.get_random_goal()
         else:
             self.get_goal(index)
@@ -424,7 +427,10 @@ class Pic4rlEnvironmentCamera(Node):
 
     def respawn_robot(self, index):
         """ """
-        if self.episode <= self.starting_episodes:
+        # 测试模式或evaluate模式应该总是使用配对的pose
+        if self.evaluate or self.mode == "testing":
+            x, y, yaw = tuple(self.poses[index])
+        elif self.episode <= self.starting_episodes:
             x, y, yaw = tuple(self.initial_pose)
         else:
             x, y, yaw = tuple(self.poses[index])
