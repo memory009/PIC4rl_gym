@@ -6,7 +6,7 @@ training_params:
 # --show-progress: # Call ``render`` function during training
     --save-model-interval: 10000 # (int) Interval to save model. The default is ``int(1e4)``
     --save-summary-interval: 10000 # (int) Interval to save summary. The default is ``int(1e3)``
-    --model-dir: 'src/Results/20251031_120540.356112_lidar_TD3/20251031T120540.688820_TD3_' # (str) Directory to restore model.
+    --model-dir: 'src/Results/20251031_140119.308696_lidar_TD3/20251031T140119.662910_TD3_' # (str) Directory to restore model.
 #    --dir-suffix: ""  # (str) Suffix for directory that stores results.
 #    --normalize-obs: # Whether normalize observation 
     --logdir: 'src/Results' # (str) Output directory name. The default is ``"results"`` (it is relative to workspace directory).
