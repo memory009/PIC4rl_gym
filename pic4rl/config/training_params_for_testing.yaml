@@ -33,7 +33,7 @@ training_params:
     --gpu: 0 # (int) GPU id. ``-1`` disables GPU. The default is ``0``.
 
 # For all off-policy algos (DDPG, TD3, SAC)
-    --n-warmup: 15000 # (int) Number of warmup steps before training. The default is 15000``1e4``.
+    --n-warmup: 10000 # (int) Number of warmup steps before training. The default is 15000``1e4``.
     --memory-capacity: 200000  # (int) Replay Buffer size. The default is ``1e6``.
 
 # For only SAC

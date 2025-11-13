@@ -1,7 +1,8 @@
 main_node:
   ros__parameters:
     # Mode
-    mode: "training" # Training or testing
+    # mode: "training" # Training or testing
+    mode: "testing"
     # Robot parameters
     robot_name: "jackal_ugv" # robot entity name in gazebo
     max_lin_vel: 0.5
@@ -17,7 +18,7 @@ main_node:
 
     # World parameters
     world_name: "new_indoor.world" # Leave empty to obtain no world
-    data_path: "training/new_indoor.json" # Indicate a goals and poses json file from goals_and_poses folder
+    data_path: "new_indoor.json" # Indicate a goals and poses json file from goals_and_poses folder
 
     # Task parameters
     task: 'goToPose' # goToPose, Following, Vineyards

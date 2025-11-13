@@ -140,6 +140,25 @@ class Pic4rlEnvironmentLidar(Node):
         self.episode_step = episode_step
 
         observation, reward, done = self._step(twist)
+
+        # 🔍 关键调试：每步都打印action
+        if episode_step <= 10 or episode_step % 20 == 0:
+            goal_distance = observation[0]
+            goal_angle = observation[1]
+            lidar_readings = observation[2:]
+            lidar_min = lidar_readings.min()
+            lidar_max = lidar_readings.max()
+            lidar_mean = lidar_readings.mean()
+
+            logging.info("="*70)
+            logging.info(f"[DEBUG Step {episode_step}]")
+            logging.info(f"  RAW ACTION from model: v={action[0]:.6f}, w={action[1]:.6f}")
+            logging.info(f"  Twist published: v={twist.linear.x:.6f}, w={twist.angular.z:.6f}")
+            logging.info(f"  Goal: distance={goal_distance:.4f}, angle={goal_angle:.4f} rad ({np.rad2deg(goal_angle):.1f}°)")
+            logging.info(f"  Lidar: min={lidar_min:.4f}, max={lidar_max:.4f}, mean={lidar_mean:.4f}")
+            logging.info(f"  危险点(<0.5m): {np.sum(lidar_readings < 0.5)}/{len(lidar_readings)}")
+            logging.info("="*70)           
+
         info = None
 
         return observation, reward, done, info
@@ -204,8 +223,12 @@ class Pic4rlEnvironmentLidar(Node):
 
     def send_action(self, twist):
         """ """
+        # print(f"[DEBUG send_action] Publishing twist: v={twist.linear.x:.6f}, w={twist.angular.z:.6f}")
         
         self.cmd_vel_pub.publish(twist)
+
+        # print(f"[DEBUG send_action] Twist published successfully")
+
         # Regulate frequency of send action if needed
         freq, t1 = compute_frequency(self.t0)
         self.get_logger().debug(f"frequency : {freq}")
@@ -375,8 +398,12 @@ class Pic4rlEnvironmentLidar(Node):
             self.get_logger().warn("service not available, waiting again...")
         self.reset_world_client.call_async(req)
 
-        if self.episode % self.change_episode == 0.0 or self.evaluate:
-            self.index = int(np.random.uniform() * len(self.poses)) - 1
+        if self.evaluate:
+            # evaluate模式：顺序遍历所有配对，确保每个都被测试到
+            self.index = self.episode % len(self.poses)
+        elif self.episode % self.change_episode == 0.0:
+            # 训练模式：随机选择配对
+            self.index = np.random.randint(0, len(self.poses))
 
         self.get_logger().debug("Respawing robot ...")
         self.respawn_robot(self.index)
@@ -388,7 +415,10 @@ class Pic4rlEnvironmentLidar(Node):
 
     def respawn_goal(self, index):
         """ """
-        if self.episode <= self.starting_episodes:
+        if self.evaluate:
+            # evaluate模式直接使用goals[index]确保配对正确
+            self.get_goal(index)
+        elif self.episode <= self.starting_episodes:
             self.get_random_goal()
         else:
             self.get_goal(index)
@@ -421,7 +451,10 @@ class Pic4rlEnvironmentLidar(Node):
 
     def respawn_robot(self, index):
         """ """
-        if self.episode <= self.starting_episodes:
+        if self.evaluate:
+            # evaluate模式直接使用poses[index]确保配对正确
+            x, y, yaw = tuple(self.poses[index])
+        elif self.episode <= self.starting_episodes:
             x, y, yaw = tuple(self.initial_pose)
         else:
             x, y, yaw = tuple(self.poses[index])
