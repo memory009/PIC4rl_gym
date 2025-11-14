@@ -123,8 +123,13 @@ class DDPG(OffPolicyAgent):
             assert isinstance(state, np.ndarray)
         state = np.expand_dims(state, axis=0).astype(
             np.float32) if is_single_state else state
+
+        # EXPERIMENT: Test noise dependency hypothesis
+        # Add small noise (0.05) during testing to verify if strategy relies on noise
+        test_sigma = 0.05 if test else self.sigma
+
         action = self._get_action_body(
-            tf.constant(state), self.sigma * (1. - test),
+            tf.constant(state), test_sigma,
             tf.constant(self.actor.max_action, dtype=tf.float32))
 
         # print("action : ", action)
